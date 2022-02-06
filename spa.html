@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Main</title>
+  <script src="spa.js"></script>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+</head>
+<body>
+  <div id="myapp"></div>
+  <script>
+    var app = Elm.Main.init({flags: "ojete", node: document.getElementById('myapp')});
+
+    app.ports.createEditor.subscribe(function(config) {
+      const element = document.getElementById("editor");
+      const editor = new JSONEditor(element, {
+  ...config["config"]["editor"],
+  "theme": "bootstrap4",
+  "iconlib": "fontawesome5",
+  "schema": config["schema"],
+  "startval": config["document"],
+  "code": "// the following lines are mandatory and readonly. you can add custom code above and below.\nif (jseditor instanceof window.jsoneditor) jseditor.destroy();\njseditor = new window.jsoneditor(document.queryselector(\"#json-editor-form\"), jedata);",
+  "style": "",
+  "desc": "add optional description here. (html format)"
+});
+    });
+
+  </script>
+</body>
+</html>
