@@ -17,20 +17,17 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-type State struct {
-	Url          string `json:"url"`
-	Method       string `json:"method"`
-	Delete       bool   `json:"delete"`
-	SendDocument bool   `json:"sendDocument"`
+type Action struct {
+	Url    string `json:"url"`
+	Method string `json:"method"`
 }
 
 type Task struct {
-	Document json.RawMessage  `json:"document"`
-	Schema   json.RawMessage  `json:"schema"`
-	Spa      string           `json:"spa"`
-	State    string           `json:"state"`
-	Config   json.RawMessage  `json:"config"`
-	States   map[string]State `json:"states"`
+	Document json.RawMessage   `json:"document"`
+	Schema   json.RawMessage   `json:"schema"`
+	Spa      string            `json:"spa"`
+	Config   json.RawMessage   `json:"config"`
+	Actions  map[string]Action `json:"actions"`
 }
 
 type config struct {
@@ -227,7 +224,7 @@ func (c config) createTask(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, id)
 }
 
-func (c config) getState(w http.ResponseWriter, req *http.Request) {
+func (c config) postAction(w http.ResponseWriter, req *http.Request) {
 	var d Task
 	vars := mux.Vars(req)
 	// Open our jsonFile
@@ -242,59 +239,24 @@ func (c config) getState(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(d.State)
-}
 
-func (c config) changeState(w http.ResponseWriter, req *http.Request) {
-	var d Task
-	vars := mux.Vars(req)
-	// Open our jsonFile
-	jsonFile, err := os.Open(filepath.Join(c.docPath, vars["id"]))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	defer jsonFile.Close()
-	err = json.NewDecoder(jsonFile).Decode(&d)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	err = json.NewDecoder(req.Body).Decode(&d.State)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	action, ok := d.States[d.State]
+	action, ok := d.Actions[vars["action"]]
 	if !ok {
-		http.Error(w, "Invalid state", http.StatusBadRequest)
+		http.Error(w, "Invalid action", http.StatusNotFound)
 		return
 	}
 
-	if action.Url != "" {
-		// Make request
-		fmt.Printf("Sending request to %s %s\n", action.Method, action.Url)
-	}
-	if action.Delete {
-		err := os.Remove(filepath.Join(c.docPath, vars["id"]))
-		if err != nil {
-			if os.IsNotExist(err) {
-				http.Error(w, "", http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Make request
+	fmt.Printf("TODO: Sending request to %s %s\n", action.Method, action.Url)
+
+	err = os.Remove(filepath.Join(c.docPath, vars["id"]))
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "", http.StatusNotFound)
 			return
 		}
-	} else {
-		// Update state
-		file, _ := json.MarshalIndent(d, "", " ")
-		err = ioutil.WriteFile(filepath.Join(c.docPath, vars["id"]), file, 0644)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -322,8 +284,7 @@ func main() {
 	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/document", c.updateDocument).Methods("PUT")
 	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/schema", c.getSchema).Methods("GET")
 	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/config", c.getConfig).Methods("GET")
-	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/state", c.getState).Methods("GET")
-	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/state", c.changeState).Methods("POST")
+	r.HandleFunc("/doc/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/action/{action}", c.postAction).Methods("POST")
 
 	log.Println("Listing for requests at http://localhost:8001/")
 	srv := &http.Server{

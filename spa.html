@@ -22,16 +22,25 @@
 
     app.ports.createEditor.subscribe(function(config) {
       const element = document.getElementById("editor");
-      const editor = new JSONEditor(element, {
-  ...config["config"]["editor"],
-  "theme": "bootstrap4",
-  "iconlib": "fontawesome5",
-  "schema": config["schema"],
-  "startval": config["document"],
-  "code": "// the following lines are mandatory and readonly. you can add custom code above and below.\nif (jseditor instanceof window.jsoneditor) jseditor.destroy();\njseditor = new window.jsoneditor(document.queryselector(\"#json-editor-form\"), jedata);",
-  "style": "",
-  "desc": "add optional description here. (html format)"
-});
+      window.editor = new JSONEditor(element, {
+        ...config["config"]["editor"],
+        "theme": "bootstrap4",
+        "iconlib": "fontawesome5",
+        "schema": config["schema"],
+        "startval": config["document"],
+        "code": "// the following lines are mandatory and readonly. you can add custom code above and below.\nif (jseditor instanceof window.jsoneditor) jseditor.destroy();\njseditor = new window.jsoneditor(document.queryselector(\"#json-editor-form\"), jedata);",
+        "style": "",
+        "desc": "add optional description here. (html format)"
+      });
+      window.editor.on('ready', () => {
+        app.ports.editorInitializer.send(null);
+      });
+      window.editor.on('change',() => {
+        app.ports.editorChanger.send(window.editor.validate().length == 0);
+      });
+    });
+    app.ports.getEditorValue.subscribe(function() {
+      app.ports.editorValueGetter.send(window.editor.validate().length == 0 ? editor.getValue() : null);
     });
 
   </script>
